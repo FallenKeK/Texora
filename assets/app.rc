@@ -1,8 +1,8 @@
 1 ICON "Texora.ico"
 1 24 "app.manifest"
 1 VERSIONINFO
-FILEVERSION 1,6,0,0
-PRODUCTVERSION 1,6,0,0
+FILEVERSION 1,6,1,0
+PRODUCTVERSION 1,6,1,0
 FILEOS 0x40004
 FILETYPE 0x1
 BEGIN
@@ -12,9 +12,9 @@ BEGIN
     BEGIN
       VALUE "CompanyName", "FallenKeK"
       VALUE "FileDescription", "Texora — текстовый редактор"
-      VALUE "FileVersion", "1.6.0"
+      VALUE "FileVersion", "1.6.1"
       VALUE "ProductName", "Texora"
-      VALUE "ProductVersion", "1.6.0"
+      VALUE "ProductVersion", "1.6.1"
       VALUE "OriginalFilename", "Texora.exe"
       VALUE "LegalCopyright", "© 2026 FallenKeK. Лицензия MIT"
     END
