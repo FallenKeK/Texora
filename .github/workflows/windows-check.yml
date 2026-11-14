@@ -1,0 +1,67 @@
+name: windows-check
+on:
+  push:
+    branches: [main, 'claude/**', 'ccr-**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-run:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Vet
+        # на Windows vet всегда ругается на unsafe.Pointer(lParam) в оконной процедуре — это штатный приём WinAPI
+        run: go vet ./... 2>&1 | Tee-Object vet.txt
+        continue-on-error: true
+        shell: pwsh
+      - name: Test
+        # провал теста валит сборку; вывод всё равно уходит в ci-results
+        run: |
+          go test ./... 2>&1 | Tee-Object test.txt
+          exit $LASTEXITCODE
+        shell: pwsh
+      - name: Build
+        run: go build -ldflags "-H windowsgui -s -w" -o Texora.exe .
+      - name: Launch and screenshot
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath .\Texora.exe -PassThru
+          Start-Sleep -Seconds 8
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          $b = [System.Windows.Forms.SystemInformation]::VirtualScreen
+          $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+          $g = [System.Drawing.Graphics]::FromImage($bmp)
+          $g.CopyFromScreen($b.Left, $b.Top, 0, 0, $bmp.Size)
+          $bmp.Save("$PWD\shot1.png")
+          "alive=$(-not $p.HasExited) title=$($p.MainWindowTitle)" | Tee-Object -FilePath result.txt
+          if ($p.HasExited) { "exit code $($p.ExitCode)" | Add-Content result.txt; exit 1 }
+          Stop-Process -Id $p.Id -Force
+      - name: Publish results to ci-results branch
+        if: always()
+        shell: pwsh
+        run: |
+          $d = "$env:RUNNER_TEMP\res"
+          New-Item -ItemType Directory $d | Out-Null
+          Copy-Item shot*.png, result.txt, vet.txt, test.txt $d -ErrorAction SilentlyContinue
+          Set-Location $d
+          git init -q -b ci-results
+          git config user.name "ci"; git config user.email "ci@example.com"
+          git add -A
+          git commit -q -m "results for $env:GITHUB_SHA"
+          git push -f "https://x-access-token:$env:GITHUB_TOKEN@github.com/$env:GITHUB_REPOSITORY.git" ci-results
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: texora-check
+          path: |
+            shot1.png
+            result.txt
+            Texora.exe

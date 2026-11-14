@@ -1,0 +1,32 @@
+name: windows-open
+on:
+  push:
+    branches: ['claude/**', 'ccr-**']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  open-files:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Build
+        run: go build -ldflags "-H windowsgui -s -w" -o Texora.exe .
+      - name: Scenario
+        shell: pwsh
+        run: ./ci/scenario.ps1
+        continue-on-error: true
+      - name: Publish
+        if: always()
+        shell: pwsh
+        run: |
+          Set-Location out
+          git init -q -b ci-open
+          git config user.name ci; git config user.email ci@example.com
+          git add -A; git commit -q -m "open results $env:GITHUB_SHA"
+          git push -f "https://x-access-token:$env:GITHUB_TOKEN@github.com/$env:GITHUB_REPOSITORY.git" ci-open
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

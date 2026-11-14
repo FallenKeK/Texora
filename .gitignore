@@ -1,0 +1,6 @@
+Texora.exe
+# бинарники сборки под Linux (go build без -o)
+/wordlike
+/texora
+*.png
+*.prof
