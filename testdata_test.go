@@ -19,6 +19,12 @@ func TestTestdataOpens(t *testing.T) {
 			t.Fatal(err)
 		}
 		name := filepath.Base(path)
+		if isPptx(name) {
+			if _, err := PptxToPDF(data); err != nil { // подробные проверки — в pptx_test.go
+				t.Errorf("%s: %v", name, err)
+			}
+			continue
+		}
 		if filepath.Ext(name) == ".pdf" {
 			d, err := LoadPDF(data)
 			if err != nil {
