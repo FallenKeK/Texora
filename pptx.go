@@ -29,6 +29,8 @@ type pptx struct {
 	w, h     float64
 	out      *pdfOut
 	nodeOf   map[string]*Node
+	cellCol  *Color // цвет текста ячейки по стилю таблицы (nil — обычный)
+	cellBold bool
 	txStyles *Node   // стили текста образца
 	defStyle *Node   // defaultTextStyle презентации
 	defTxt   float64 // размер текста по умолчанию
@@ -700,7 +702,7 @@ type txPara struct {
 
 // rprOf — свойства текста: значения из цепочки (своё, стиль списка, заполнители), первое найденное.
 func (x *pptx) runFont(chain []*Node, defSize float64, title bool) (Font, Color, bool) {
-	f := Font{Px: defSize}
+	f := Font{Px: defSize, Bold: x.cellBold}
 	fam := x.minor
 	if title {
 		fam = x.major
@@ -709,16 +711,20 @@ func (x *pptx) runFont(chain []*Node, defSize float64, title bool) (Font, Color,
 	if m, ok := x.clrMap["tx1"]; ok {
 		col = x.theme[m]
 	}
+	if x.cellCol != nil {
+		col = *x.cellCol
+	}
 	gotSz, gotB, gotI, gotC, gotF, u := false, false, false, false, false, false
-	for _, r := range chain {
+	for ci, r := range chain {
 		if r == nil {
 			continue
 		}
+		// стиль таблицы сильнее общих умолчаний (ci > 0), но слабее свойств самой руны (ci == 0)
 		if !gotSz && r.Av("sz") != "" {
 			v, _ := strconv.ParseFloat(r.Av("sz"), 64)
 			f.Px, gotSz = v/100, true
 		}
-		if !gotB && r.Av("b") != "" {
+		if !gotB && r.Av("b") != "" && !(x.cellBold && ci > 0) {
 			f.Bold, gotB = r.Av("b") == "1" || r.Av("b") == "true", true
 		}
 		if !gotI && r.Av("i") != "" {
@@ -727,7 +733,7 @@ func (x *pptx) runFont(chain []*Node, defSize float64, title bool) (Font, Color,
 		if !u && r.Av("u") != "" && r.Av("u") != "none" {
 			u = true
 		}
-		if !gotC {
+		if !gotC && !(x.cellCol != nil && ci > 0) {
 			if c, ok := x.color(r.Kid("solidFill")); ok {
 				col, gotC = c, true
 			}
@@ -1112,8 +1118,21 @@ func (x *pptx) drawTable(p *pdfPage, tbl *Node, r Rect) {
 	for _, g := range tbl.Kid("tblGrid").KidsNamed("gridCol") {
 		cols = append(cols, emu(g.Av("w")))
 	}
+	// встроенный стиль: шапка цветом акцента, строки чередуются, белые линии
+	var accent *Color
+	firstRow, bandRow := false, false
+	if pr := tbl.Kid("tblPr"); pr != nil {
+		firstRow, bandRow = pr.Av("firstRow") == "1", pr.Av("bandRow") == "1"
+		if id := strings.TrimSpace(pr.Kid("tableStyleId").TextContent()); id != "" {
+			if name, ok := tableStyleAccent[strings.ToUpper(id)]; ok {
+				if c, ok := x.theme[name]; ok {
+					accent = &c
+				}
+			}
+		}
+	}
 	y := r.Y
-	for _, tr := range tbl.KidsNamed("tr") {
+	for ri, tr := range tbl.KidsNamed("tr") {
 		h := emu(tr.Av("h"))
 		// высота строки — не меньше нужной тексту
 		cx := r.X
@@ -1142,8 +1161,31 @@ func (x *pptx) drawTable(p *pdfPage, tbl *Node, r Rect) {
 		}
 		for _, c := range cells {
 			pr := c.tc.Kid("tcPr")
-			if f, ok := x.fill(pr); ok && f != nil {
-				p.fillRect(c.r, *f)
+			styleFill := (*Color)(nil)
+			header := false
+			if accent != nil {
+				header = firstRow && ri == 0
+				k := ri
+				if firstRow {
+					k--
+				}
+				switch {
+				case header:
+					styleFill = accent
+				case bandRow && k%2 == 0:
+					t := tintOf(*accent, 0.4)
+					styleFill = &t
+				default:
+					t := tintOf(*accent, 0.2)
+					styleFill = &t
+				}
+			}
+			if f, ok := x.fill(pr); ok {
+				if f != nil {
+					p.fillRect(c.r, *f)
+				}
+			} else if styleFill != nil {
+				p.fillRect(c.r, *styleFill)
 			}
 			edge := func(name string, a, b [2]float64) {
 				lnN := pr.Kid(name)
@@ -1159,6 +1201,10 @@ func (x *pptx) drawTable(p *pdfPage, tbl *Node, r Rect) {
 							st.W = emu(w)
 						}
 					}
+				}
+				if st.Stroke == nil && accent != nil {
+					col := Hex(0xffffff)
+					st = pdfStyle{Stroke: &col, W: 1}
 				}
 				if st.Stroke == nil {
 					col := Hex(0x000000)
@@ -1180,7 +1226,14 @@ func (x *pptx) drawTable(p *pdfPage, tbl *Node, r Rect) {
 				}
 				in := Rect{rr.X + mar("marL", 7.2), rr.Y + mar("marT", 3.6), rr.W - mar("marL", 7.2) - mar("marR", 7.2), rr.H - mar("marT", 3.6) - mar("marB", 3.6)}
 				anchor := pr.Av("anchor")
+				// цвет и начертание текста по стилю таблицы (шапка — белый полужирный)
+				x.cellCol, x.cellBold = nil, false
+				if header {
+					w := Hex(0xffffff)
+					x.cellCol, x.cellBold = &w, true
+				}
 				x.drawTextInner(p, tb, in, anchor)
+				x.cellCol, x.cellBold = nil, false
 			}
 		}
 		y += h
@@ -1469,7 +1522,7 @@ func (x *pptx) drawChart(p *pdfPage, part string, r Rect) {
 		}
 		style := ct.Kid("scatterStyle").Av("val")
 		for _, ser := range ct.KidsNamed("ser") {
-			s := chSeries{name: strings.TrimSpace(ser.Kid("tx").TextContent()), w: 2.25}
+			s := chSeries{name: serName(ser.Kid("tx")), w: 2.25}
 			i := len(series)
 			s.col = x.sliceColor(i)
 			if sp := ser.Kid("spPr"); sp != nil {
@@ -1973,4 +2026,28 @@ func (x *pptx) drawCustGeom(p *pdfPage, cg *Node, t xform, m mapper, st pdfStyle
 func emuRaw(s string) float64 {
 	v, _ := strconv.ParseFloat(s, 64)
 	return v
+}
+
+// serName — название ряда диаграммы: из кэша строки или прямого значения (без текста формулы Sheet1!$B$1).
+func serName(tx *Node) string {
+	if tx == nil {
+		return ""
+	}
+	if v := tx.First("v"); v != nil {
+		return strings.TrimSpace(v.TextContent())
+	}
+	return strings.TrimSpace(tx.TextContent())
+}
+
+// Встроенные стили таблиц PowerPoint «Средний стиль 2» (по умолчанию у большинства таблиц): код стиля → цвет темы.
+var tableStyleAccent = map[string]string{
+	"{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}": "accent1", "{21E4AEA4-8DFA-4A89-87EB-49C32662AFE0}": "accent2",
+	"{F5AB1C69-6EDB-4FF4-983F-18BD219EF322}": "accent3", "{00A15C55-8517-42AA-B614-E9B94910E393}": "accent4",
+	"{7DF18680-E054-41AD-8BC1-D1AEF772440D}": "accent5", "{93296810-A885-4BE3-A3E7-6D5BEEA58F35}": "accent6",
+}
+
+// tintOf — цвет, смешанный с белым: t — доля исходного цвета (0,4 — «оттенок 40 %»).
+func tintOf(c Color, t float64) Color {
+	mix := func(v uint32) uint8 { return uint8(math.Round(255 - (255-float64(v))*t)) }
+	return RGBA(mix(uint32(c)>>16&255), mix(uint32(c)>>8&255), mix(uint32(c)&255), 255)
 }

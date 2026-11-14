@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"io"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -54,14 +55,14 @@ func testPptx(t *testing.T) []byte {
 			`</p:spTree></p:cSld></p:sld>`,
 		"ppt/slides/_rels/slide1.xml.rels": relsXML([3]string{"rId1", "slideLayout", "../slideLayouts/slideLayout1.xml"}),
 		"ppt/slides/slide2.xml": `<?xml version="1.0"?><p:sld ` + pptxNS + `><p:cSld><p:spTree>` +
-			`<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="2" name="tbl"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="457200" y="457200"/><a:ext cx="4000000" cy="800000"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl><a:tblGrid><a:gridCol w="2000000"/><a:gridCol w="2000000"/></a:tblGrid>` +
+			`<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="2" name="tbl"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="457200" y="457200"/><a:ext cx="4000000" cy="800000"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl><a:tblPr firstRow="1" bandRow="1"><a:tableStyleId>{93296810-A885-4BE3-A3E7-6D5BEEA58F35}</a:tableStyleId></a:tblPr><a:tblGrid><a:gridCol w="2000000"/><a:gridCol w="2000000"/></a:tblGrid>` +
 			`<a:tr h="400000"><a:tc><a:txBody><a:bodyPr/><a:p><a:r><a:t>Параметр</a:t></a:r></a:p></a:txBody><a:tcPr><a:solidFill><a:srgbClr val="DDDDEE"/></a:solidFill></a:tcPr></a:tc><a:tc><a:txBody><a:bodyPr/><a:p><a:r><a:t>Значение</a:t></a:r></a:p></a:txBody><a:tcPr/></a:tc></a:tr>` +
 			`<a:tr h="400000"><a:tc gridSpan="2"><a:txBody><a:bodyPr/><a:p><a:r><a:t>Объединённая ячейка</a:t></a:r></a:p></a:txBody><a:tcPr/></a:tc><a:tc hMerge="1"><a:txBody><a:bodyPr/><a:p/></a:txBody><a:tcPr/></a:tc></a:tr></a:tbl></a:graphicData></a:graphic></p:graphicFrame>` +
 			`<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="3" name="ch"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="457200" y="1600000"/><a:ext cx="8000000" cy="4500000"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" r:id="rId2"/></a:graphicData></a:graphic></p:graphicFrame>` +
 			`</p:spTree></p:cSld></p:sld>`,
 		"ppt/slides/_rels/slide2.xml.rels": relsXML([3]string{"rId1", "slideLayout", "../slideLayouts/slideLayout1.xml"}, [3]string{"rId2", "chart", "../charts/chart1.xml"}),
 		"ppt/charts/chart1.xml": `<?xml version="1.0"?><c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><c:chart><c:title><c:tx><c:rich><a:p><a:r><a:t>Выручка по кварталам</a:t></a:r></a:p></c:rich></c:tx></c:title><c:plotArea><c:barChart><c:barDir val="col"/>` +
-			`<c:ser><c:tx><c:strRef><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>План</c:v></c:pt></c:strCache></c:strRef></c:tx><c:cat><c:strRef><c:strCache><c:ptCount val="2"/><c:pt idx="0"><c:v>Первый</c:v></c:pt><c:pt idx="1"><c:v>Второй</c:v></c:pt></c:strCache></c:strRef></c:cat><c:val><c:numRef><c:numCache><c:ptCount val="2"/><c:pt idx="0"><c:v>12.5</c:v></c:pt><c:pt idx="1"><c:v>20</c:v></c:pt></c:numCache></c:numRef></c:val></c:ser>` +
+			`<c:ser><c:tx><c:strRef><c:f>Sheet1!$B$1</c:f><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>План</c:v></c:pt></c:strCache></c:strRef></c:tx><c:cat><c:strRef><c:strCache><c:ptCount val="2"/><c:pt idx="0"><c:v>Первый</c:v></c:pt><c:pt idx="1"><c:v>Второй</c:v></c:pt></c:strCache></c:strRef></c:cat><c:val><c:numRef><c:numCache><c:ptCount val="2"/><c:pt idx="0"><c:v>12.5</c:v></c:pt><c:pt idx="1"><c:v>20</c:v></c:pt></c:numCache></c:numRef></c:val></c:ser>` +
 			`<c:ser><c:tx><c:v>Факт</c:v></c:tx><c:cat><c:strRef><c:strCache><c:ptCount val="2"/><c:pt idx="0"><c:v>Первый</c:v></c:pt><c:pt idx="1"><c:v>Второй</c:v></c:pt></c:strCache></c:strRef></c:cat><c:val><c:numRef><c:numCache><c:ptCount val="2"/><c:pt idx="0"><c:v>10</c:v></c:pt><c:pt idx="1"><c:v>-3</c:v></c:pt></c:numCache></c:numRef></c:val></c:ser>` +
 			`</c:barChart><c:catAx><c:axPos val="b"/><c:title><c:tx><c:rich><a:p><a:r><a:t>Квартал</a:t></a:r></a:p></c:rich></c:tx></c:title></c:catAx><c:valAx><c:axPos val="l"/><c:majorGridlines/><c:majorUnit val="5"/></c:valAx></c:plotArea><c:legend><c:legendPos val="b"/></c:legend></c:chart></c:chartSpace>`,
 	}
@@ -107,6 +108,19 @@ func TestPptxToPDF(t *testing.T) {
 		if !strings.Contains(t2, want) {
 			t.Errorf("на втором слайде нет %q: %q", want, t2)
 		}
+	}
+	if strings.Contains(t2, "Sheet1") {
+		t.Errorf("в легенду попал текст формулы ряда: %q", t2)
+	}
+	// стиль таблицы: шапка цветом accent6 (5B9BD5), текст шапки белый
+	hdr := false
+	for _, cs := range pdfStreams(out) {
+		if bytes.Contains(cs, []byte("0.357 0.608 0.835 rg")) {
+			hdr = true
+		}
+	}
+	if !hdr {
+		t.Errorf("шапка таблицы не залита цветом стиля")
 	}
 	// размер слайда 10×7,5 дюйма
 	if b := d.Pages[0].Box; b[2]-b[0] < 719 || b[2]-b[0] > 721 || b[3]-b[1] < 539 || b[3]-b[1] > 541 {
@@ -172,4 +186,50 @@ func pdfStreams(pdf []byte) [][]byte {
 		out = append(out, b)
 	}
 	return out
+}
+
+// TestWriteDemoPptx пишет демо-презентацию в файл из DEMO_PPTX (для снимков: go run . shots <папка> <файл>).
+func TestWriteDemoPptx(t *testing.T) {
+	out := os.Getenv("DEMO_PPTX")
+	if out == "" {
+		t.Skip("DEMO_PPTX не задан")
+	}
+	if err := os.WriteFile(out, testPptx(t), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// testdata/demo.pptx собран python-pptx (другой генератор, чем наш тестовый): титул, карточки, диаграмма
+// с формулами в названиях рядов и таблица во встроенном стиле PowerPoint.
+func TestPptxFromPythonPptx(t *testing.T) {
+	data, err := os.ReadFile("testdata/demo.pptx")
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := PptxToPDF(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, err := LoadPDF(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Pages) != 3 {
+		t.Fatalf("слайдов %d, ждали 3", len(d.Pages))
+	}
+	var all string
+	for i := range d.Pages {
+		_, gl := d.RenderPage(i, 0.5, false)
+		s, _ := PageText(gl)
+		all += " " + strings.Join(strings.Fields(s), " ")
+	}
+	for _, want := range []string{"Сравнительный анализ алгоритмов", "Цель и задачи работы", "Теория", "Результаты замеров",
+		"Сортировка слиянием", "Быстрая сортировка", "Сортировка Шелла", "10 000", "1 000 000", "Алгоритм", "420"} {
+		if !strings.Contains(all, want) {
+			t.Errorf("в презентации нет %q", want)
+		}
+	}
+	if strings.Contains(all, "Sheet1") {
+		t.Errorf("в легенду попала формула ряда")
+	}
 }
