@@ -36,6 +36,10 @@ go run . interactive   # и другие сценарии: features, captions, e
 На Linux программа не открывает окно, а рисует интерфейс в PNG (ttf.go), поэтому её можно проверять без Windows.
 CI (`.github/workflows`) на windows-latest собирает exe, запускает его, снимает скриншоты и гоняет тесты.
 
+## Автор
+
+FallenKeK — [github.com/FallenKeK](https://github.com/FallenKeK).
+
 ## Лицензия
 
 [MIT](LICENSE). Вшитые словари орфографии и переносов взяты из LibreOffice и распространяются на своих условиях —
