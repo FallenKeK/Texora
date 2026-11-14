@@ -1,0 +1,7 @@
+# texora
+# [texora]
+.\win.go:501:26: possible misuse of unsafe.Pointer
+.\win.go:549:23: possible misuse of unsafe.Pointer
+.\win.go:708:18: possible misuse of unsafe.Pointer
+.\winplat.go:206:11: possible misuse of unsafe.Pointer
+.\winplat.go:247:33: possible misuse of unsafe.Pointer
