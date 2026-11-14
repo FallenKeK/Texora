@@ -543,18 +543,50 @@ func (a *App) paneAbout(cv *Canvas, area Rect) float64 {
 	a.textAt(cv, AppName, x, y+a.d(20), Font{Family: a.UIFont, Px: a.d(44), Bold: true}, th.Text)
 	a.textAt(cv, a.tr("Версия")+" "+AppVersion, x, y+a.d(82), a.uiFont(14), th.Accent2)
 	a.textAt(cv, "Пиши. Создавай. Вдохновляйся.", x, y+a.d(110), a.uiFont(16), th.TextDim)
-	y += lg + a.d(40)
-	for _, l := range []string{
-		"Текстовый редактор для Windows, полностью свой: движок вёрстки, форматы файлов, интерфейс.",
-		"Открывает и сохраняет .docx, .odt, .rtf, .txt, читает .doc, экспортирует в PDF.",
-		"Работает без интернета, без Microsoft Office и без LibreOffice.",
-		"",
-		"Словари проверки орфографии и переносов — из проекта LibreOffice: русский © 1997–2008 Александр Лебедев,",
-		"английский — SCOWL © Kevin Atkinson и др., шаблоны переносов — TeX hyphenation patterns. Лицензии BSD/MPL-совместимые.",
-	} {
-		a.textAt(cv, l, area.X, y, a.uiFont(14), th.Text)
-		y += a.d(28)
+	y += lg + a.d(36)
+	para := func(lines []string, f Font, c Color, step float64) {
+		for _, l := range lines {
+			a.textAt(cv, l, area.X, y, f, c)
+			y += a.d(step)
+		}
 	}
+	head := func(t string) {
+		y += a.d(10)
+		a.textAt(cv, strings.ToUpper(a.tr(t)), area.X, y, Font{Family: a.UIFont, Px: a.d(11), Bold: true}, th.TextDim)
+		y += a.d(26)
+	}
+	para([]string{
+		"Texora — бесплатный текстовый редактор для Windows, сделанный с нуля: свой движок вёрстки,",
+		"свои форматы файлов и свой интерфейс. Один файл, без установки, без интернета,",
+		"без Microsoft Office и LibreOffice.",
+	}, a.uiFont(14.5), th.Text, 26)
+	head("Что умеет")
+	para([]string{
+		"• Документы .docx, .odt, .rtf, .txt, .html; чтение .doc; экспорт в PDF с поиском по тексту и закладками.",
+		"• Курсовые и дипломы: шаблоны и нормоконтроль по ГОСТ, оглавление, названия рисунков и таблиц,",
+		"   перекрёстные ссылки, список литературы по ГОСТ Р 7.0.100 с импортом из BibTeX и RIS.",
+		"• Формулы с живым предпросмотром, колонки, сноски, колонтитулы, разделы, обтекание картинок.",
+		"• Рецензирование: исправления, примечания, сравнение двух версий документа.",
+		"• Орфография и переносы для русского и английского.",
+		"• Просмотр PDF (включая сканы) и презентаций PowerPoint.",
+	}, a.uiFont(13.5), th.Text, 24)
+	head("Автор")
+	a.textAt(cv, AppAuthor, area.X, y, Font{Family: a.UIFont, Px: a.d(15), Bold: true}, th.Text)
+	y += a.d(28)
+	site := strings.TrimPrefix(AppSite, "https://")
+	sf := a.uiFont(13.5)
+	sr := Rect{area.X - a.d(4), y - a.d(3), a.measure(site, sf) + a.d(8), a.d(24)}
+	a.hits = append(a.hits, hit{id: "x:site", r: sr, act: func() { a.P.OpenURL(AppSite) }, tip: a.tr("Открыть страницу проекта")})
+	a.hoverBg(cv, "x:site", sr, a.d(4))
+	a.textAt(cv, site, area.X, y, sf, th.Accent2)
+	y += a.d(26)
+	para([]string{"Исходный код открыт, лицензия MIT. Сообщить об ошибке или предложить идею — во вкладке Issues на странице проекта."},
+		a.uiFont(13), th.TextDim, 24)
+	head("Благодарности")
+	para([]string{
+		"Словари орфографии и переносов — из проекта LibreOffice: русский © 1997–2008 Александр Лебедев,",
+		"английский — SCOWL © Kevin Atkinson, переносы — шаблоны TeX. Условия их лицензий — в NOTICES.md.",
+	}, a.uiFont(12.5), th.TextDim, 22)
 	y += a.d(10)
 	if a.Diag != "" {
 		a.textAt(cv, a.Diag, area.X, y, a.uiFont(12), th.TextDim)

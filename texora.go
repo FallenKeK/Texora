@@ -15,6 +15,12 @@ import (
 
 const AppName = "Texora"
 
+// AppAuthor — автор программы (в «О программе», свойствах exe и списке установленных программ).
+const AppAuthor = "FallenKeK"
+
+// AppSite — страница проекта.
+const AppSite = "https://github.com/FallenKeK/Texora"
+
 // ---------------------------------------------------------------- настройки
 type Settings struct {
 	Theme           string   `json:"theme"`  // dark, light, violet, system

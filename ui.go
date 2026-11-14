@@ -1394,7 +1394,7 @@ func (a *App) errorBox(text string) {
 }
 
 // ---------------------------------------------------------------- файлы
-const AppVersion = "1.6.0"
+const AppVersion = "1.6.1"
 
 func (a *App) Save() bool {
 	if a.pdf != nil {

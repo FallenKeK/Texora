@@ -83,13 +83,13 @@ BEGIN
   BEGIN
     BLOCK "041904B0"
     BEGIN
-      VALUE "CompanyName", "Texora"
+      VALUE "CompanyName", "FallenKeK"
       VALUE "FileDescription", "Texora — текстовый редактор"
       VALUE "FileVersion", "%[1]s"
       VALUE "ProductName", "Texora"
       VALUE "ProductVersion", "%[1]s"
       VALUE "OriginalFilename", "Texora.exe"
-      VALUE "LegalCopyright", "Texora"
+      VALUE "LegalCopyright", "© 2026 FallenKeK. Лицензия MIT"
     END
   END
   BLOCK "VarFileInfo"

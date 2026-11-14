@@ -123,7 +123,7 @@ $u.TargetPath = $exe; $u.Arguments = '--uninstall'; $u.IconLocation = $ico; $u.S
 	un := `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\Texora`
 	reg(un, "/v", "DisplayName", "/d", "Texora")
 	reg(un, "/v", "DisplayIcon", "/d", ico)
-	reg(un, "/v", "Publisher", "/d", "Texora")
+	reg(un, "/v", "Publisher", "/d", AppAuthor)
 	reg(un, "/v", "DisplayVersion", "/d", version)
 	reg(un, "/v", "UninstallString", "/d", `"`+exe+`" --uninstall`)
 	reg(un, "/v", "InstallLocation", "/d", dir)
