@@ -3,4 +3,7 @@ Texora.exe
 /wordlike
 /texora
 *.png
+# картинки для README и страницы проекта
+!docs/*.png
+!docs/screenshots/*.png
 *.prof

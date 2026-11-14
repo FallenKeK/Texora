@@ -302,7 +302,6 @@ var enUI = map[string]string{
 	"Версия":           "Version",
 	"Текстовый редактор для Windows, полностью свой: движок вёрстки, форматы файлов, интерфейс.": "A word processor for Windows built from scratch: its own layout engine, file formats and interface.",
 	"Открывает и сохраняет .docx, .odt, .rtf, .txt, читает .doc, экспортирует в PDF.":            "Opens and saves .docx, .odt, .rtf and .txt, reads .doc, exports to PDF.",
-	"Работает без интернета, без Microsoft Office и без LibreOffice.":                            "Works offline, without Microsoft Office or LibreOffice.",
 	"Пустой документ":  "Blank document",
 	"Курсовая работа":  "Term paper",
 	"Дипломная работа": "Thesis",

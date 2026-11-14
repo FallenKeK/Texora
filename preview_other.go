@@ -113,6 +113,10 @@ func main() {
 		runFeatures(tb)
 		return
 	}
+	if len(args) >= 1 && args[0] == "shots" {
+		runShots(tb, args[1:])
+		return
+	}
 	if len(args) >= 2 && args[0] == "normshot" {
 		runNormShot(tb, args[1:])
 		return
